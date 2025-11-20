@@ -1,0 +1,17 @@
+# Temporary files
+*.tmp
+*.temp
+~$*.csv
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Excel temporary files
+~$*.xlsx
+~$*.xls
+
+# Backup files
+*.bak
+*.backup

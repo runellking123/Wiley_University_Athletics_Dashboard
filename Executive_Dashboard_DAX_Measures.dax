@@ -1,0 +1,383 @@
+// ============================================================================
+// WILEY UNIVERSITY ATHLETICS EXECUTIVE DASHBOARD - DAX MEASURES
+// ============================================================================
+// Data Sources (CSV files at root level):
+//   - Scholarship_Summary_By_Term_Sport
+//   - Athletes_Master_By_Term_2017_2025
+//   - Academic_Performance_By_Term_Sport_Scholarship
+//   - Athletes_With_Scholarships_By_Term_2017_2025
+//   - Participation_Summary_By_Term_Sport
+//   - Athletic_Scholarships_By_Term_2017_2025
+// ============================================================================
+
+
+// ============================================================================
+// SECTION 1: SCHOLARSHIP METRICS
+// ============================================================================
+
+// Total Scholarship Dollars Awarded (Current Selection)
+Total Scholarship Dollars =
+SUM(Scholarship_Summary_By_Term_Sport[TotalScholarshipDollars])
+
+// Total Number of Scholarship Athletes
+Total Scholarship Athletes =
+SUM(Scholarship_Summary_By_Term_Sport[TotalScholarshipAthletes])
+
+// Average Scholarship Amount Per Athlete
+Avg Scholarship Per Athlete =
+DIVIDE(
+    [Total Scholarship Dollars],
+    [Total Scholarship Athletes],
+    0
+)
+
+// Maximum Scholarship Awarded
+Max Scholarship Awarded =
+MAX(Scholarship_Summary_By_Term_Sport[MaxScholarship])
+
+// Minimum Scholarship Awarded (Excluding Zero)
+Min Scholarship Awarded =
+CALCULATE(
+    MIN(Scholarship_Summary_By_Term_Sport[MinScholarship]),
+    Scholarship_Summary_By_Term_Sport[MinScholarship] > 0
+)
+
+// Total Scholarships from Detail Table
+Total Scholarships Detail =
+SUM(Athletic_Scholarships_By_Term_2017_2025[AmountAwarded])
+
+// Count of Individual Scholarship Awards
+Count of Scholarship Awards =
+COUNTROWS(Athletic_Scholarships_By_Term_2017_2025)
+
+// Athletes Receiving Scholarships (Distinct Count)
+Distinct Scholarship Recipients =
+DISTINCTCOUNT(Athletes_With_Scholarships_By_Term_2017_2025[ID_NUM])
+
+// Scholarship Coverage Rate (% of Athletes with Scholarships)
+Scholarship Coverage Rate =
+VAR AthletesWithScholarship =
+    CALCULATE(
+        DISTINCTCOUNT(Athletes_With_Scholarships_By_Term_2017_2025[ID_NUM]),
+        Athletes_With_Scholarships_By_Term_2017_2025[TotalScholarshipAwarded] > 0
+    )
+VAR TotalAthletes =
+    DISTINCTCOUNT(Athletes_With_Scholarships_By_Term_2017_2025[ID_NUM])
+RETURN
+    DIVIDE(AthletesWithScholarship, TotalAthletes, 0)
+
+
+// ============================================================================
+// SECTION 2: PARTICIPATION METRICS
+// ============================================================================
+
+// Total Athletes (All Sports)
+Total Athletes =
+SUM(Participation_Summary_By_Term_Sport[TotalAthletes])
+
+// Total Male Athletes
+Total Male Athletes =
+SUM(Participation_Summary_By_Term_Sport[MaleAthletes])
+
+// Total Female Athletes
+Total Female Athletes =
+SUM(Participation_Summary_By_Term_Sport[FemaleAthletes])
+
+// Male Athlete Percentage
+Male Athlete Pct =
+DIVIDE(
+    [Total Male Athletes],
+    [Total Athletes],
+    0
+)
+
+// Female Athlete Percentage
+Female Athlete Pct =
+DIVIDE(
+    [Total Female Athletes],
+    [Total Athletes],
+    0
+)
+
+// Count of Sports Programs
+Count of Sports =
+DISTINCTCOUNT(Participation_Summary_By_Term_Sport[Sport])
+
+// Athletes by Sport (for matrix/table visuals)
+Athletes by Sport =
+SUMX(
+    VALUES(Participation_Summary_By_Term_Sport[Sport]),
+    CALCULATE(SUM(Participation_Summary_By_Term_Sport[TotalAthletes]))
+)
+
+// Unique Athletes (from Master table)
+Unique Athletes Master =
+DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])
+
+
+// ============================================================================
+// SECTION 3: ACADEMIC PERFORMANCE METRICS
+// ============================================================================
+
+// Total Students in Academic Tracking
+Total Academic Students =
+SUM(Academic_Performance_By_Term_Sport_Scholarship[TotalStudents])
+
+// Students with GPA Above 3.5 (Dean's List Eligible)
+Students GPA Above 3.5 =
+SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_Above_3_5])
+
+// Students with GPA 3.0 to 3.5 (Good Standing)
+Students GPA 3.0 to 3.5 =
+SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_3_0_to_3_5])
+
+// Students with GPA 2.5 to 3.0 (Satisfactory)
+Students GPA 2.5 to 3.0 =
+SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_2_5_to_3_0])
+
+// Students with GPA Below 2.5 (At Risk)
+Students GPA Below 2.5 =
+SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_Below_2_5])
+
+// Academic Excellence Rate (GPA >= 3.0)
+Academic Excellence Rate =
+VAR ExcellentStudents = [Students GPA Above 3.5] + [Students GPA 3.0 to 3.5]
+VAR TotalStudents = [Total Academic Students]
+RETURN
+    DIVIDE(ExcellentStudents, TotalStudents, 0)
+
+// Academic Risk Rate (GPA < 2.5)
+Academic Risk Rate =
+DIVIDE(
+    [Students GPA Below 2.5],
+    [Total Academic Students],
+    0
+)
+
+// Weighted Average GPA (from Participation Summary)
+Weighted Avg GPA =
+DIVIDE(
+    SUMX(
+        Participation_Summary_By_Term_Sport,
+        Participation_Summary_By_Term_Sport[AvgCareerGPA] * Participation_Summary_By_Term_Sport[TotalAthletes]
+    ),
+    [Total Athletes],
+    0
+)
+
+// Average Hours Earned
+Avg Hours Earned =
+DIVIDE(
+    SUMX(
+        Participation_Summary_By_Term_Sport,
+        Participation_Summary_By_Term_Sport[AvgHoursEarned] * Participation_Summary_By_Term_Sport[TotalAthletes]
+    ),
+    [Total Athletes],
+    0
+)
+
+// Scholarship vs Non-Scholarship GPA Comparison
+Scholarship Student GPA =
+CALCULATE(
+    AVERAGE(Academic_Performance_By_Term_Sport_Scholarship[AvgCareerGPA]),
+    Academic_Performance_By_Term_Sport_Scholarship[ScholarshipStatus] = "On Scholarship"
+)
+
+Non-Scholarship Student GPA =
+CALCULATE(
+    AVERAGE(Academic_Performance_By_Term_Sport_Scholarship[AvgCareerGPA]),
+    Academic_Performance_By_Term_Sport_Scholarship[ScholarshipStatus] = "No Scholarship"
+)
+
+
+// ============================================================================
+// SECTION 4: TREND ANALYSIS & COMPARISONS
+// ============================================================================
+
+// Previous Year Scholarship Dollars
+PY Scholarship Dollars =
+CALCULATE(
+    [Total Scholarship Dollars],
+    FILTER(
+        ALL(Scholarship_Summary_By_Term_Sport[AwardYear]),
+        Scholarship_Summary_By_Term_Sport[AwardYear] = MAX(Scholarship_Summary_By_Term_Sport[AwardYear]) - 1
+    )
+)
+
+// Year-over-Year Scholarship Change ($)
+YoY Scholarship Change =
+[Total Scholarship Dollars] - [PY Scholarship Dollars]
+
+// Year-over-Year Scholarship Change (%)
+YoY Scholarship Change Pct =
+DIVIDE(
+    [YoY Scholarship Change],
+    [PY Scholarship Dollars],
+    0
+)
+
+// Previous Year Athletes
+PY Total Athletes =
+CALCULATE(
+    [Total Athletes],
+    FILTER(
+        ALL(Participation_Summary_By_Term_Sport[AwardYear]),
+        Participation_Summary_By_Term_Sport[AwardYear] = MAX(Participation_Summary_By_Term_Sport[AwardYear]) - 1
+    )
+)
+
+// Year-over-Year Athlete Change
+YoY Athlete Change =
+[Total Athletes] - [PY Total Athletes]
+
+// Year-over-Year Athlete Change (%)
+YoY Athlete Change Pct =
+DIVIDE(
+    [YoY Athlete Change],
+    [PY Total Athletes],
+    0
+)
+
+// Current Award Year (for display)
+Current Award Year =
+MAX(Scholarship_Summary_By_Term_Sport[AwardYear])
+
+// Selected Term (for display)
+Selected Term =
+SELECTEDVALUE(Scholarship_Summary_By_Term_Sport[Term], "All Terms")
+
+
+// ============================================================================
+// SECTION 5: KPI & EXECUTIVE SUMMARY MEASURES
+// ============================================================================
+
+// Investment Per Athlete (Scholarship $ / Total Athletes)
+Investment Per Athlete =
+VAR TotalScholarship = [Total Scholarship Dollars]
+VAR Athletes = [Total Athletes]
+RETURN
+    DIVIDE(TotalScholarship, Athletes, 0)
+
+// Scholarship Utilization (Athletes with Scholarship / Total Athletes)
+Scholarship Utilization =
+VAR ScholarshipAthletes = [Total Scholarship Athletes]
+VAR AllAthletes = [Total Athletes]
+RETURN
+    DIVIDE(ScholarshipAthletes, AllAthletes, 0)
+
+// Gender Balance Index (Closer to 0.5 = More Balanced)
+Gender Balance Index =
+ABS(0.5 - [Female Athlete Pct])
+
+// Academic Success Score (Composite)
+Academic Success Score =
+VAR ExcellenceWeight = 0.4
+VAR GoodStandingWeight = 0.3
+VAR SatisfactoryWeight = 0.2
+VAR AtRiskWeight = 0.1
+RETURN
+    ([Students GPA Above 3.5] * 4 * ExcellenceWeight) +
+    ([Students GPA 3.0 to 3.5] * 3 * GoodStandingWeight) +
+    ([Students GPA 2.5 to 3.0] * 2 * SatisfactoryWeight) +
+    ([Students GPA Below 2.5] * 1 * AtRiskWeight)
+
+// Scholarship ROI Indicator (GPA per $1000 invested)
+Scholarship ROI Indicator =
+DIVIDE(
+    [Weighted Avg GPA] * 1000,
+    [Avg Scholarship Per Athlete],
+    0
+)
+
+
+// ============================================================================
+// SECTION 6: SPORT-SPECIFIC MEASURES
+// ============================================================================
+
+// Baseball Scholarship Total
+Baseball Scholarship Total =
+CALCULATE(
+    [Total Scholarship Dollars],
+    Scholarship_Summary_By_Term_Sport[Sport] = "Baseball"
+)
+
+// Basketball Scholarship Total
+Basketball Scholarship Total =
+CALCULATE(
+    [Total Scholarship Dollars],
+    Scholarship_Summary_By_Term_Sport[Sport] = "Basketball"
+)
+
+// Soccer Scholarship Total
+Soccer Scholarship Total =
+CALCULATE(
+    [Total Scholarship Dollars],
+    Scholarship_Summary_By_Term_Sport[Sport] = "Soccer"
+)
+
+// Track & Field Scholarship Total
+Track Field Scholarship Total =
+CALCULATE(
+    [Total Scholarship Dollars],
+    Scholarship_Summary_By_Term_Sport[Sport] = "Track & Field"
+)
+
+// Volleyball Scholarship Total
+Volleyball Scholarship Total =
+CALCULATE(
+    [Total Scholarship Dollars],
+    Scholarship_Summary_By_Term_Sport[Sport] = "Volleyball"
+)
+
+// Sport with Highest Investment
+Top Funded Sport =
+VAR SportTotals =
+    ADDCOLUMNS(
+        VALUES(Scholarship_Summary_By_Term_Sport[Sport]),
+        "SportTotal", [Total Scholarship Dollars]
+    )
+RETURN
+    MAXX(SportTotals, [SportTotal])
+
+
+// ============================================================================
+// SECTION 7: CONDITIONAL FORMATTING MEASURES
+// ============================================================================
+
+// GPA Status Color (for conditional formatting)
+GPA Status =
+VAR AvgGPA = [Weighted Avg GPA]
+RETURN
+    SWITCH(
+        TRUE(),
+        AvgGPA >= 3.5, "Excellent",
+        AvgGPA >= 3.0, "Good",
+        AvgGPA >= 2.5, "Satisfactory",
+        "At Risk"
+    )
+
+// Scholarship Trend Indicator
+Scholarship Trend =
+VAR Change = [YoY Scholarship Change Pct]
+RETURN
+    SWITCH(
+        TRUE(),
+        Change > 0.1, "Strong Growth",
+        Change > 0, "Growth",
+        Change = 0, "Stable",
+        Change > -0.1, "Decline",
+        "Significant Decline"
+    )
+
+// Athlete Count Trend Indicator
+Athlete Trend =
+VAR Change = [YoY Athlete Change Pct]
+RETURN
+    SWITCH(
+        TRUE(),
+        Change > 0.1, "Strong Growth",
+        Change > 0, "Growth",
+        Change = 0, "Stable",
+        Change > -0.1, "Decline",
+        "Significant Decline"
+    )

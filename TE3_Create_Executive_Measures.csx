@@ -159,21 +159,27 @@ RETURN
 
 CreateMeasure(
     "Total Athletes",
-    @"SUM(Participation_Summary_By_Term_Sport[TotalAthletes])",
+    @"DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])",
     "2. Participation Metrics",
     "#,##0"
 );
 
 CreateMeasure(
     "Total Male Athletes",
-    @"SUM(Participation_Summary_By_Term_Sport[MaleAthletes])",
+    @"CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[Sex] = ""M""
+)",
     "2. Participation Metrics",
     "#,##0"
 );
 
 CreateMeasure(
     "Total Female Athletes",
-    @"SUM(Participation_Summary_By_Term_Sport[FemaleAthletes])",
+    @"CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[Sex] = ""F""
+)",
     "2. Participation Metrics",
     "#,##0"
 );
@@ -202,17 +208,14 @@ CreateMeasure(
 
 CreateMeasure(
     "Count of Sports",
-    @"DISTINCTCOUNT(Participation_Summary_By_Term_Sport[Sport])",
+    @"DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[Sport])",
     "2. Participation Metrics",
     "#,##0"
 );
 
 CreateMeasure(
     "Athletes by Sport",
-    @"SUMX(
-    VALUES(Participation_Summary_By_Term_Sport[Sport]),
-    CALCULATE(SUM(Participation_Summary_By_Term_Sport[TotalAthletes]))
-)",
+    @"DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])",
     "2. Participation Metrics",
     "#,##0"
 );
@@ -230,35 +233,50 @@ CreateMeasure(
 
 CreateMeasure(
     "Total Academic Students",
-    @"SUM(Academic_Performance_By_Term_Sport_Scholarship[TotalStudents])",
+    @"DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])",
     "3. Academic Performance",
     "#,##0"
 );
 
 CreateMeasure(
     "Students GPA Above 3.5",
-    @"SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_Above_3_5])",
+    @"CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] >= 3.5
+)",
     "3. Academic Performance",
     "#,##0"
 );
 
 CreateMeasure(
     "Students GPA 3.0 to 3.5",
-    @"SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_3_0_to_3_5])",
+    @"CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] >= 3.0,
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] < 3.5
+)",
     "3. Academic Performance",
     "#,##0"
 );
 
 CreateMeasure(
     "Students GPA 2.5 to 3.0",
-    @"SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_2_5_to_3_0])",
+    @"CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] >= 2.5,
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] < 3.0
+)",
     "3. Academic Performance",
     "#,##0"
 );
 
 CreateMeasure(
     "Students GPA Below 2.5",
-    @"SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_Below_2_5])",
+    @"CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] < 2.5,
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] > 0
+)",
     "3. Academic Performance",
     "#,##0"
 );
@@ -286,13 +304,13 @@ CreateMeasure(
 
 CreateMeasure(
     "Weighted Avg GPA",
-    @"DIVIDE(
-    SUMX(
-        Participation_Summary_By_Term_Sport,
-        Participation_Summary_By_Term_Sport[AvgCareerGPA] * Participation_Summary_By_Term_Sport[TotalAthletes]
+    @"AVERAGEX(
+    SUMMARIZE(
+        Athletes_Master_By_Term_2017_2025,
+        Athletes_Master_By_Term_2017_2025[ID_NUM],
+        ""LatestGPA"", MAX(Athletes_Master_By_Term_2017_2025[CAREER_GPA])
     ),
-    [Total Athletes],
-    0
+    [LatestGPA]
 )",
     "3. Academic Performance",
     "0.00"
@@ -300,13 +318,13 @@ CreateMeasure(
 
 CreateMeasure(
     "Avg Hours Earned",
-    @"DIVIDE(
-    SUMX(
-        Participation_Summary_By_Term_Sport,
-        Participation_Summary_By_Term_Sport[AvgHoursEarned] * Participation_Summary_By_Term_Sport[TotalAthletes]
+    @"AVERAGEX(
+    SUMMARIZE(
+        Athletes_Master_By_Term_2017_2025,
+        Athletes_Master_By_Term_2017_2025[ID_NUM],
+        ""LatestHours"", MAX(Athletes_Master_By_Term_2017_2025[CAREER_HRS_EARNED])
     ),
-    [Total Athletes],
-    0
+    [LatestHours]
 )",
     "3. Academic Performance",
     "0.0"

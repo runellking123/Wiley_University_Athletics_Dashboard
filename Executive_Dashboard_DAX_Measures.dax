@@ -71,17 +71,23 @@ RETURN
 // SECTION 2: PARTICIPATION METRICS
 // ============================================================================
 
-// Total Athletes (All Sports)
+// Total Unique Athletes (counts each student once regardless of sport/term)
 Total Athletes =
-SUM(Participation_Summary_By_Term_Sport[TotalAthletes])
+DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])
 
-// Total Male Athletes
+// Total Unique Male Athletes
 Total Male Athletes =
-SUM(Participation_Summary_By_Term_Sport[MaleAthletes])
+CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[Sex] = "M"
+)
 
-// Total Female Athletes
+// Total Unique Female Athletes
 Total Female Athletes =
-SUM(Participation_Summary_By_Term_Sport[FemaleAthletes])
+CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[Sex] = "F"
+)
 
 // Male Athlete Percentage
 Male Athlete Pct =
@@ -101,16 +107,13 @@ DIVIDE(
 
 // Count of Sports Programs
 Count of Sports =
-DISTINCTCOUNT(Participation_Summary_By_Term_Sport[Sport])
+DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[Sport])
 
-// Athletes by Sport (for matrix/table visuals)
+// Athletes by Sport (unique count per sport in current filter context)
 Athletes by Sport =
-SUMX(
-    VALUES(Participation_Summary_By_Term_Sport[Sport]),
-    CALCULATE(SUM(Participation_Summary_By_Term_Sport[TotalAthletes]))
-)
+DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])
 
-// Unique Athletes (from Master table)
+// Unique Athletes (from Master table) - same as Total Athletes
 Unique Athletes Master =
 DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])
 
@@ -119,25 +122,40 @@ DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])
 // SECTION 3: ACADEMIC PERFORMANCE METRICS
 // ============================================================================
 
-// Total Students in Academic Tracking
+// Total Unique Students in Academic Tracking (counts each student once)
 Total Academic Students =
-SUM(Academic_Performance_By_Term_Sport_Scholarship[TotalStudents])
+DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM])
 
-// Students with GPA Above 3.5 (Dean's List Eligible)
+// Students with GPA Above 3.5 (Dean's List Eligible) - Unique Count
 Students GPA Above 3.5 =
-SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_Above_3_5])
+CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] >= 3.5
+)
 
-// Students with GPA 3.0 to 3.5 (Good Standing)
+// Students with GPA 3.0 to 3.5 (Good Standing) - Unique Count
 Students GPA 3.0 to 3.5 =
-SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_3_0_to_3_5])
+CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] >= 3.0,
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] < 3.5
+)
 
-// Students with GPA 2.5 to 3.0 (Satisfactory)
+// Students with GPA 2.5 to 3.0 (Satisfactory) - Unique Count
 Students GPA 2.5 to 3.0 =
-SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_2_5_to_3_0])
+CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] >= 2.5,
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] < 3.0
+)
 
-// Students with GPA Below 2.5 (At Risk)
+// Students with GPA Below 2.5 (At Risk) - Unique Count
 Students GPA Below 2.5 =
-SUM(Academic_Performance_By_Term_Sport_Scholarship[Students_GPA_Below_2_5])
+CALCULATE(
+    DISTINCTCOUNT(Athletes_Master_By_Term_2017_2025[ID_NUM]),
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] < 2.5,
+    Athletes_Master_By_Term_2017_2025[CAREER_GPA] > 0
+)
 
 // Academic Excellence Rate (GPA >= 3.0)
 Academic Excellence Rate =
@@ -154,26 +172,26 @@ DIVIDE(
     0
 )
 
-// Weighted Average GPA (from Participation Summary)
+// Average Career GPA (calculated from individual student records)
 Weighted Avg GPA =
-DIVIDE(
-    SUMX(
-        Participation_Summary_By_Term_Sport,
-        Participation_Summary_By_Term_Sport[AvgCareerGPA] * Participation_Summary_By_Term_Sport[TotalAthletes]
+AVERAGEX(
+    SUMMARIZE(
+        Athletes_Master_By_Term_2017_2025,
+        Athletes_Master_By_Term_2017_2025[ID_NUM],
+        "LatestGPA", MAX(Athletes_Master_By_Term_2017_2025[CAREER_GPA])
     ),
-    [Total Athletes],
-    0
+    [LatestGPA]
 )
 
-// Average Hours Earned
+// Average Hours Earned (calculated from individual student records)
 Avg Hours Earned =
-DIVIDE(
-    SUMX(
-        Participation_Summary_By_Term_Sport,
-        Participation_Summary_By_Term_Sport[AvgHoursEarned] * Participation_Summary_By_Term_Sport[TotalAthletes]
+AVERAGEX(
+    SUMMARIZE(
+        Athletes_Master_By_Term_2017_2025,
+        Athletes_Master_By_Term_2017_2025[ID_NUM],
+        "LatestHours", MAX(Athletes_Master_By_Term_2017_2025[CAREER_HRS_EARNED])
     ),
-    [Total Athletes],
-    0
+    [LatestHours]
 )
 
 // Scholarship vs Non-Scholarship GPA Comparison

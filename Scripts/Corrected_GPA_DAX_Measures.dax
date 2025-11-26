@@ -1,0 +1,408 @@
+// ============================================================================
+// WILEY UNIVERSITY ATHLETICS DASHBOARD - CORRECTED GPA DAX MEASURES
+// Version: 1.0 - Created 11/25/2025
+// Purpose: Fix GPA calculations to respond properly to slicers
+// ============================================================================
+
+// ============================================================================
+// IMPORTANT: RELATIONSHIP REQUIREMENTS
+// ============================================================================
+// For slicers to work properly, you MUST create these relationships in Power BI:
+//
+// 1. Filters[Academic Term] --> Academic Performance by Term Sport and Scholarship[Academic Term]
+// 2. Filters[Award Year] --> Academic Performance by Term Sport and Scholarship[Award Year]
+// 3. Filters[Sport Name] --> Academic Performance by Term Sport and Scholarship[Sport Name]
+//
+// OR use TREATAS in your measures (shown below) if relationships cannot be created
+// ============================================================================
+
+
+// ============================================================================
+// CATEGORY: CORE GPA MEASURES (These respect slicer context automatically)
+// ============================================================================
+
+// Average Career GPA - Weighted Average based on Total Students
+// This properly calculates weighted average when filters are applied
+Average Career GPA (Weighted) =
+VAR TotalStudentCount = SUM('Academic Performance by Term Sport and Scholarship'[Total Students])
+VAR WeightedGPA = SUMX(
+    'Academic Performance by Term Sport and Scholarship',
+    'Academic Performance by Term Sport and Scholarship'[Average Career GPA] *
+    'Academic Performance by Term Sport and Scholarship'[Total Students]
+)
+RETURN
+    DIVIDE(WeightedGPA, TotalStudentCount, BLANK())
+
+
+// Average Career GPA - Simple (when you just need the average of pre-aggregated values)
+Average Career GPA =
+AVERAGE('Academic Performance by Term Sport and Scholarship'[Average Career GPA])
+
+
+// ============================================================================
+// CATEGORY: GPA DISTRIBUTION COUNTS
+// ============================================================================
+
+// Total Students with GPA Above 3.5
+Students GPA Above 3.5 =
+SUM('Academic Performance by Term Sport and Scholarship'[Students with GPA Above 3.5])
+
+
+// Total Students with GPA 3.0 to 3.5
+Students GPA 3.0 to 3.5 =
+SUM('Academic Performance by Term Sport and Scholarship'[Students with GPA 3.0 to 3.5])
+
+
+// Total Students with GPA 2.5 to 3.0
+Students GPA 2.5 to 3.0 =
+SUM('Academic Performance by Term Sport and Scholarship'[Students with GPA 2.5 to 3.0])
+
+
+// Total Students with GPA Below 2.5 (FIXED - was incorrectly summing Academic Term)
+Students GPA Below 2.5 =
+SUM('Academic Performance by Term Sport and Scholarship'[Students with GPA Below 2.5])
+
+
+// Total Students in Current Selection
+Total Students =
+SUM('Academic Performance by Term Sport and Scholarship'[Total Students])
+
+
+// ============================================================================
+// CATEGORY: GPA DISTRIBUTION PERCENTAGES
+// ============================================================================
+
+// Percentage of Students with GPA Above 3.5
+Pct Students GPA Above 3.5 =
+VAR StudentsAbove35 = [Students GPA Above 3.5]
+VAR TotalStudents = [Total Students]
+RETURN DIVIDE(StudentsAbove35, TotalStudents, 0) * 100
+
+
+// Percentage of Students with GPA 3.0 to 3.5
+Pct Students GPA 3.0 to 3.5 =
+VAR Students30to35 = [Students GPA 3.0 to 3.5]
+VAR TotalStudents = [Total Students]
+RETURN DIVIDE(Students30to35, TotalStudents, 0) * 100
+
+
+// Percentage of Students with GPA 2.5 to 3.0
+Pct Students GPA 2.5 to 3.0 =
+VAR Students25to30 = [Students GPA 2.5 to 3.0]
+VAR TotalStudents = [Total Students]
+RETURN DIVIDE(Students25to30, TotalStudents, 0) * 100
+
+
+// Percentage of Students with GPA Below 2.5
+Pct Students GPA Below 2.5 =
+VAR StudentsBelow25 = [Students GPA Below 2.5]
+VAR TotalStudents = [Total Students]
+RETURN DIVIDE(StudentsBelow25, TotalStudents, 0) * 100
+
+
+// ============================================================================
+// CATEGORY: ACADEMIC RISK MEASURES
+// ============================================================================
+
+// At-Risk Student Rate (FIXED - was referencing non-existent GPA column)
+At-Risk Student Rate =
+DIVIDE(
+    SUM('Academic Performance by Term Sport and Scholarship'[Students with GPA Below 2.5]),
+    SUM('Academic Performance by Term Sport and Scholarship'[Total Students]),
+    0
+) * 100
+
+
+// At-Risk Students Count (FIXED - was referencing non-existent GPA column)
+At-Risk Students Count =
+SUM('Academic Performance by Term Sport and Scholarship'[Students with GPA Below 2.5])
+
+
+// Academic Excellence Rate (Students with GPA 3.0+)
+Academic Excellence Rate =
+VAR StudentsAbove30 = [Students GPA Above 3.5] + [Students GPA 3.0 to 3.5]
+VAR TotalStudents = [Total Students]
+RETURN DIVIDE(StudentsAbove30, TotalStudents, 0) * 100
+
+
+// High Performance Athletes (Students with GPA 3.5+)
+High Performance Athletes =
+SUM('Academic Performance by Term Sport and Scholarship'[Students with GPA Above 3.5])
+
+
+// ============================================================================
+// CATEGORY: HOURS MEASURES
+// ============================================================================
+
+// Average Hours Earned (Weighted)
+Average Hours Earned (Weighted) =
+VAR TotalStudentCount = SUM('Academic Performance by Term Sport and Scholarship'[Total Students])
+VAR WeightedHours = SUMX(
+    'Academic Performance by Term Sport and Scholarship',
+    'Academic Performance by Term Sport and Scholarship'[Average Hours Earned] *
+    'Academic Performance by Term Sport and Scholarship'[Total Students]
+)
+RETURN
+    DIVIDE(WeightedHours, TotalStudentCount, BLANK())
+
+
+// Average Hours Attempted (Weighted)
+Average Hours Attempted (Weighted) =
+VAR TotalStudentCount = SUM('Academic Performance by Term Sport and Scholarship'[Total Students])
+VAR WeightedHours = SUMX(
+    'Academic Performance by Term Sport and Scholarship',
+    'Academic Performance by Term Sport and Scholarship'[Average Hours Attempted] *
+    'Academic Performance by Term Sport and Scholarship'[Total Students]
+)
+RETURN
+    DIVIDE(WeightedHours, TotalStudentCount, BLANK())
+
+
+// Completion Rate (Hours Earned / Hours Attempted)
+Completion Rate =
+VAR HoursEarned = [Average Hours Earned (Weighted)]
+VAR HoursAttempted = [Average Hours Attempted (Weighted)]
+RETURN DIVIDE(HoursEarned, HoursAttempted, 0) * 100
+
+
+// ============================================================================
+// CATEGORY: SCHOLARSHIP GPA COMPARISON
+// ============================================================================
+
+// Scholarship Student GPA (Students on scholarship)
+Scholarship Student GPA =
+CALCULATE(
+    [Average Career GPA (Weighted)],
+    'Academic Performance by Term Sport and Scholarship'[Scholarship Status] = "On Scholarship"
+)
+
+
+// Non-Scholarship Student GPA
+Non-Scholarship Student GPA =
+CALCULATE(
+    [Average Career GPA (Weighted)],
+    'Academic Performance by Term Sport and Scholarship'[Scholarship Status] = "No Scholarship"
+)
+
+
+// GPA Difference (Scholarship vs Non-Scholarship)
+GPA Difference Scholarship vs Non =
+VAR ScholarshipGPA = [Scholarship Student GPA]
+VAR NonScholarshipGPA = [Non-Scholarship Student GPA]
+RETURN ScholarshipGPA - NonScholarshipGPA
+
+
+// ============================================================================
+// CATEGORY: YEAR OVER YEAR COMPARISONS
+// ============================================================================
+
+// Current Year Average GPA
+Current Year GPA =
+VAR MaxYear = MAX('Academic Performance by Term Sport and Scholarship'[Award Year])
+RETURN
+CALCULATE(
+    [Average Career GPA (Weighted)],
+    'Academic Performance by Term Sport and Scholarship'[Award Year] = MaxYear
+)
+
+
+// Previous Year Average GPA
+Previous Year GPA =
+VAR MaxYear = MAX('Academic Performance by Term Sport and Scholarship'[Award Year])
+RETURN
+CALCULATE(
+    [Average Career GPA (Weighted)],
+    'Academic Performance by Term Sport and Scholarship'[Award Year] = MaxYear - 1
+)
+
+
+// YoY GPA Change
+YoY GPA Change =
+VAR CurrentGPA = [Current Year GPA]
+VAR PrevGPA = [Previous Year GPA]
+RETURN CurrentGPA - PrevGPA
+
+
+// YoY GPA Change Percentage
+YoY GPA Change Pct =
+VAR CurrentGPA = [Current Year GPA]
+VAR PrevGPA = [Previous Year GPA]
+RETURN DIVIDE(CurrentGPA - PrevGPA, PrevGPA, 0) * 100
+
+
+// ============================================================================
+// CATEGORY: PROGRAM GROWTH (FIXED)
+// ============================================================================
+
+// Program Growth Rate (FIXED - was using [AwardYear] instead of [Award Year])
+Program Growth Rate =
+VAR MaxYear = MAX('Academic Performance by Term Sport and Scholarship'[Award Year])
+VAR CurrentYearStudents =
+    CALCULATE(
+        [Total Students],
+        'Academic Performance by Term Sport and Scholarship'[Award Year] = MaxYear
+    )
+VAR PreviousYearStudents =
+    CALCULATE(
+        [Total Students],
+        'Academic Performance by Term Sport and Scholarship'[Award Year] = MaxYear - 1
+    )
+RETURN DIVIDE(CurrentYearStudents - PreviousYearStudents, PreviousYearStudents, 0) * 100
+
+
+// ============================================================================
+// CATEGORY: MEASURES USING FILTERS TABLE WITH TREATAS
+// (Use these if you cannot create direct relationships between Filters and data tables)
+// ============================================================================
+
+// GPA with Filters Table (use if Filters table is not directly related)
+Average Career GPA with Filters =
+VAR SelectedTerms = VALUES('Filters'[Academic Term])
+VAR SelectedYears = VALUES('Filters'[Award Year])
+VAR SelectedSports = VALUES('Filters'[Sport Name])
+RETURN
+CALCULATE(
+    [Average Career GPA (Weighted)],
+    TREATAS(SelectedTerms, 'Academic Performance by Term Sport and Scholarship'[Academic Term]),
+    TREATAS(SelectedYears, 'Academic Performance by Term Sport and Scholarship'[Award Year]),
+    TREATAS(SelectedSports, 'Academic Performance by Term Sport and Scholarship'[Sport Name])
+)
+
+
+// Total Students with Filters Table
+Total Students with Filters =
+VAR SelectedTerms = VALUES('Filters'[Academic Term])
+VAR SelectedYears = VALUES('Filters'[Award Year])
+VAR SelectedSports = VALUES('Filters'[Sport Name])
+RETURN
+CALCULATE(
+    [Total Students],
+    TREATAS(SelectedTerms, 'Academic Performance by Term Sport and Scholarship'[Academic Term]),
+    TREATAS(SelectedYears, 'Academic Performance by Term Sport and Scholarship'[Award Year]),
+    TREATAS(SelectedSports, 'Academic Performance by Term Sport and Scholarship'[Sport Name])
+)
+
+
+// At-Risk Rate with Filters Table
+At-Risk Rate with Filters =
+VAR SelectedTerms = VALUES('Filters'[Academic Term])
+VAR SelectedYears = VALUES('Filters'[Award Year])
+VAR SelectedSports = VALUES('Filters'[Sport Name])
+RETURN
+CALCULATE(
+    [At-Risk Student Rate],
+    TREATAS(SelectedTerms, 'Academic Performance by Term Sport and Scholarship'[Academic Term]),
+    TREATAS(SelectedYears, 'Academic Performance by Term Sport and Scholarship'[Award Year]),
+    TREATAS(SelectedSports, 'Academic Performance by Term Sport and Scholarship'[Sport Name])
+)
+
+
+// ============================================================================
+// CATEGORY: PARTICIPATION SUMMARY MEASURES (from separate table)
+// ============================================================================
+
+// Total Athletes from Participation Summary
+Total Athletes =
+SUM('Participation Summary by Term and Sport'[Total Athletes])
+
+
+// Average Career GPA from Participation Summary
+Average Career GPA (Participation) =
+VAR TotalAthleteCount = SUM('Participation Summary by Term and Sport'[Total Athletes])
+VAR WeightedGPA = SUMX(
+    'Participation Summary by Term and Sport',
+    'Participation Summary by Term and Sport'[Average Career GPA] *
+    'Participation Summary by Term and Sport'[Total Athletes]
+)
+RETURN
+    DIVIDE(WeightedGPA, TotalAthleteCount, BLANK())
+
+
+// Male Athletes
+Male Athletes =
+SUM('Participation Summary by Term and Sport'[Male Athletes])
+
+
+// Female Athletes
+Female Athletes =
+SUM('Participation Summary by Term and Sport'[Female Athletes])
+
+
+// Gender Diversity Index
+Gender Diversity Index =
+VAR MaleCount = [Male Athletes]
+VAR FemaleCount = [Female Athletes]
+VAR Ratio = DIVIDE(MaleCount, FemaleCount, 0)
+RETURN 100 - ABS(Ratio - 1) * 50
+
+
+// ============================================================================
+// CATEGORY: ATHLETE MASTER DATA MEASURES (Row-level calculations)
+// ============================================================================
+
+// Distinct Athletes Count
+Distinct Athletes =
+DISTINCTCOUNT('Athletes Master Data 2017-2025'[Student ID Number])
+
+
+// Average GPA from Individual Records
+Average GPA (Individual) =
+AVERAGE('Athletes Master Data 2017-2025'[Career GPA])
+
+
+// Athletes with GPA Above 3.5 (from individual records)
+Athletes GPA Above 3.5 =
+CALCULATE(
+    DISTINCTCOUNT('Athletes Master Data 2017-2025'[Student ID Number]),
+    'Athletes Master Data 2017-2025'[Career GPA] >= 3.5
+)
+
+
+// Athletes with GPA 3.0 to 3.5 (from individual records)
+Athletes GPA 3.0 to 3.5 =
+CALCULATE(
+    DISTINCTCOUNT('Athletes Master Data 2017-2025'[Student ID Number]),
+    'Athletes Master Data 2017-2025'[Career GPA] >= 3.0,
+    'Athletes Master Data 2017-2025'[Career GPA] < 3.5
+)
+
+
+// Athletes with GPA 2.5 to 3.0 (from individual records)
+Athletes GPA 2.5 to 3.0 =
+CALCULATE(
+    DISTINCTCOUNT('Athletes Master Data 2017-2025'[Student ID Number]),
+    'Athletes Master Data 2017-2025'[Career GPA] >= 2.5,
+    'Athletes Master Data 2017-2025'[Career GPA] < 3.0
+)
+
+
+// Athletes with GPA Below 2.5 (from individual records)
+Athletes GPA Below 2.5 =
+CALCULATE(
+    DISTINCTCOUNT('Athletes Master Data 2017-2025'[Student ID Number]),
+    'Athletes Master Data 2017-2025'[Career GPA] < 2.5,
+    'Athletes Master Data 2017-2025'[Career GPA] > 0
+)
+
+
+// ============================================================================
+// INSTRUCTIONS FOR POWER BI:
+// ============================================================================
+//
+// OPTION 1: CREATE RELATIONSHIPS (Recommended)
+// 1. Go to Model view in Power BI
+// 2. Create these relationships (all One-to-Many, Single direction):
+//    - Filters[Academic Term] --> Academic Performance...[Academic Term]
+//    - Filters[Award Year] --> Academic Performance...[Award Year]
+//    - Filters[Sport Name] --> Academic Performance...[Sport Name]
+//    - Filters[Academic Term] --> Participation Summary...[Academic Term]
+//    - Filters[Award Year] --> Participation Summary...[Award Year]
+//    - Filters[Sport Name] --> Participation Summary...[Sport Name]
+// 3. Use the regular measures (without "with Filters" suffix)
+//
+// OPTION 2: USE TREATAS MEASURES
+// If you cannot create relationships due to data issues:
+// 1. Use the measures with "with Filters" suffix
+// 2. These use TREATAS to virtually apply the filter context
+//
+// ============================================================================
